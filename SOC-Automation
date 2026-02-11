@@ -1,0 +1,183 @@
+# 🤖 SOC Automation Project  
+### Automated Detection & Response Pipeline  
+
+Wazuh → Shuffle → VirusTotal → TheHive → Email
+
+---
+
+## 🔎 Overview
+
+This project simulates a real-world SOC detection and response workflow.
+
+When **Mimikatz credential dumping** is executed on a Windows 10 endpoint:
+
+1. Sysmon logs the process creation
+2. Wazuh detects it using a custom rule
+3. Alert is forwarded to Shuffle via webhook
+4. SHA256 hash is extracted using regex
+5. Hash is enriched via VirusTotal API
+6. Alert is created in TheHive
+7. Email notification is sent to the analyst
+
+This demonstrates end-to-end:
+
+- Detection Engineering  
+- SIEM Configuration  
+- SOAR Automation  
+- Threat Intelligence Enrichment  
+- Incident Escalation  
+- Troubleshooting & Debugging  
+
+---
+
+## 🧱 Architecture
+
+```
+Windows 10 (Sysmon)
+        ↓
+Wazuh Agent
+        ↓
+Wazuh Manager (Vultr Cloud)
+        ↓ (Webhook - Rule 100002)
+Shuffle SOAR
+        ↓ Extract SHA256
+        ↓ VirusTotal Lookup
+        ↓ TheHive Alert Creation
+        ↓ Email Notification
+```
+
+---
+
+## 🛠 Environment
+
+- Windows 10 VM (VirtualBox)
+- Sysmon configured for process logging
+- Wazuh Manager (Vultr)
+- TheHive (Vultr)
+- Shuffle SOAR
+- VirusTotal API v3
+
+---
+
+## 🧠 Detection Logic
+
+### Custom Wazuh Rule
+
+```xml
+<rule id="100002" level="15">
+  <if_group>sysmon_event1</if_group>
+  <field name="win.eventdata.originalFileName" type="pcre2">(?i)mimikatz\.exe</field>
+  <mitre>
+    <id>T1003</id>
+  </mitre>
+</rule>
+```
+
+- Monitors Sysmon process creation (Event ID 1)
+- Detects `mimikatz.exe`
+- Maps to MITRE ATT&CK T1003 (Credential Dumping)
+- High severity alert (15)
+
+---
+
+## 🔗 Wazuh → Shuffle Integration
+
+Configured in `ossec.conf`:
+
+```xml
+<integration>
+  <name>shuffle</name>
+  <hook_url>https://shuffler.io/api/v1/hooks/webhook_xxxxx</hook_url>
+  <rule_id>100002</rule_id>
+  <alert_format>json</alert_format>
+</integration>
+```
+
+Only Rule 100002 alerts are forwarded in JSON format.
+
+---
+
+## 🤖 Automation Workflow
+
+### SHA256 Extraction
+
+```regex
+SHA256=([0-9A-Fa-f]{64})
+```
+
+Extracts file hash from alert data.
+
+---
+
+### VirusTotal Enrichment
+
+- API v3
+- Hash reputation lookup
+- Used to provide context before escalation
+
+---
+
+### TheHive Alert Creation
+
+Initial configuration caused duplicate alert error:
+
+```
+Alert already exists
+```
+
+### Fix Implemented
+
+```json
+"sourceRef": "{{ exec.rule_id }}-{{ shuffle.execution_id }}"
+```
+
+Ensures each alert is uniquely identified.
+
+---
+
+## 🧩 Issues Resolved
+
+| Issue | Cause | Resolution |
+|-------|--------|------------|
+| Wazuh dashboard inaccessible | Port 443 blocked | Allowed HTTPS traffic |
+| TheHive duplicate alerts | Identical sourceRef | Added execution_id |
+| JSON parsing error | Incorrect structure | Corrected formatting |
+
+---
+
+## 📸 Screenshots Included
+
+- Architecture diagram  
+- Wazuh running confirmation  
+- Custom rule configuration  
+- Shuffle workflow  
+- SHA256 extraction  
+- VirusTotal lookup  
+- TheHive success  
+- Email confirmation  
+
+---
+
+## 🚀 Skills Demonstrated
+
+- Detection Engineering  
+- MITRE ATT&CK Mapping  
+- SIEM Configuration  
+- SOAR Automation  
+- API Integration  
+- Cloud Deployment  
+- Incident Escalation Workflow  
+- Debugging Production-Level Issues  
+
+---
+
+## ✅ Result
+
+A fully automated SOC pipeline capable of:
+
+- Detecting credential dumping
+- Enriching indicators automatically
+- Escalating to case management
+- Notifying analysts in real time
+
+Built in a realistic lab environment using enterprise-style tooling.
