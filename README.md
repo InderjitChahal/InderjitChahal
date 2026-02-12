@@ -1,168 +1,70 @@
-# Hello, I'm Indy 👋
-<a href="https://www.linkedin.com/in/inderjit-chahal-28a59b258">
-  <img src="https://img.shields.io/badge/-LinkedIn-0072b1?&style=for-the-badge&logo=linkedin&logoColor=white" />
-</a>
+# Indy SOC Automation Project
 
----
+SOC automation pipeline using **Wazuh** (SIEM/XDR) + **Shuffle** (SOAR) + **VirusTotal** (enrichment) + **TheHive** (case management).
 
-## About Me
-I am an aspiring Cyber Security and Technology professional with a strong interest in **Security Operations, threat detection, incident response, and secure software engineering**. I am building practical skills through **hands-on labs, guided learning, and enterprise-focused technical projects**, while preparing to pursue a **Cyber Security or Digital Technology Degree Apprenticeship**.
+## What it does
+1. Windows 10 endpoint generates telemetry via Sysmon.
+2. Wazuh detects suspicious activity (custom rule: Mimikatz).
+3. Wazuh forwards alerts matching `rule_id=100002` to Shuffle via webhook integration.
+4. Shuffle:
+   - extracts SHA256 from the alert payload
+   - enriches it using VirusTotal v3
+   - sends an email notification
+   - creates an alert in TheHive
 
-I am particularly motivated by opportunities within **large, complex organisations**, where technology reliability, security, and data protection are critical.
+## Architecture
+![Architecture](docs/images/architecture.jpg)
 
----
+## Tech
+- Wazuh Manager/Indexer/Dashboard (cloud VPS)
+- TheHive (cloud VPS)
+- Shuffle (cloud)
+- VirusTotal API v3
+- Windows 10 + Sysmon + Wazuh Agent
 
-## Career Objective
-To secure a **Cyber Security or Digital Technology Degree Apprenticeship** where I can develop into a **SOC Tier 1 Analyst or Junior Security Engineer**, gaining experience in monitoring, detection, secure systems, and incident response while studying towards a degree-level qualification.
+## Repository layout (suggested)
+```
+.
+├── docs/
+│   ├── Indy_SOC_Automation_Project_Final_Report.docx
+│   └── images/
+├── configs/
+│   ├── wazuh/
+│   │   ├── ossec.conf.snippet.xml
+│   │   └── local_rules.xml
+│   └── shuffle/
+│       └── thehive_alert_body.json
+└── .github/
+```
 
----
+## Key configs
+### Wazuh integration (ossec.conf)
+See: `configs/wazuh/ossec.conf.snippet.xml`
 
-## Technical Skills (SOC & Engineering Focused)
+### Custom rule (local_rules.xml)
+See: `configs/wazuh/local_rules.xml`
 
-| Skill Area | Evidence |
-|-----------|----------|
-| SIEM awareness & log analysis | TryHackMe (Defensive Security, SIEM exposure) |
-| Network traffic analysis | TryHackMe (Wireshark, protocol analysis) |
-| SOC workflows & alert triage | TryHackMe (Defensive Security concepts) |
-| Linux fundamentals | TryHackMe (terminal usage, permissions, file systems) |
-| Windows fundamentals | TryHackMe (Event Viewer, Sysmon concepts, AD basics) |
-| Secure engineering awareness | Enterprise-style engineering apprenticeship exposure |
-| Scripting fundamentals | TryHackMe (Python basics, Bash, PowerShell) |
+### TheHive alert JSON (Shuffle body)
+See: `configs/shuffle/thehive_alert_body.json`
 
----
+## Setup checklist
+- [ ] Install Sysmon + Wazuh Agent on the Windows endpoint
+- [ ] Deploy Wazuh on a VPS and confirm the dashboard loads (TCP/443)
+- [ ] Add the local rule for Mimikatz detection (rule_id `100002`)
+- [ ] Configure Wazuh integration hook to Shuffle webhook URL
+- [ ] Build Shuffle workflow (Webhook → SHA256 Extract → VirusTotal → Email → TheHive)
+- [ ] Create TheHive users: SOC analyst + Shuffle service account
+- [ ] Store secrets in `.env` (never commit)
 
-## Tools & Technologies
+## Environment variables
+Copy `.env.example` → `.env` and fill:
+- `THEHIVE_URL`, `THEHIVE_API_KEY`
+- `VT_API_KEY`
+- `EMAIL_TO` (for notifications)
 
-### Network Security & Traffic Analysis
-<div>
-  <img src="https://img.shields.io/badge/-Wireshark-1679A7?&style=for-the-badge&logo=Wireshark&logoColor=white" />
-  <img src="https://img.shields.io/badge/-Suricata-EF3B2D?&style=for-the-badge&logo=Suricata&logoColor=white" />
-  <img src="https://img.shields.io/badge/-Zeek-777BB4?&style=for-the-badge&logo=Zeek&logoColor=white" />
-</div>
+## Notes / troubleshooting
+- TheHive rejects duplicate alerts when `sourceRef` is the same. Use a unique `sourceRef`, e.g.:
+  `{{ exec.rule_id }}-{{ shuffle.execution_id }}`
 
-### Endpoint / Operating Systems
-<div>
-  <img src="https://img.shields.io/badge/-Windows-0078D6?&style=for-the-badge&logo=Windows&logoColor=white" />
-  <img src="https://img.shields.io/badge/-PowerShell-5391FE?&style=for-the-badge&logo=PowerShell&logoColor=white" />
-</div>
-
-### SIEM & SOC Platforms (Introductory Exposure)
-<div>
-  <img src="https://img.shields.io/badge/-Splunk-000000?&style=for-the-badge&logo=Splunk&logoColor=white" />
-  <img src="https://img.shields.io/badge/-Elastic-005571?&style=for-the-badge&logo=Elastic&logoColor=white" />
-</div>
-
----
-
-## Certifications & Learning
-
-I have completed structured, hands-on learning through **TryHackMe**, focusing on building strong foundations in IT, networking, cyber security, and SOC-relevant skills.
-
-<div>
-  <img src="https://img.shields.io/badge/-TryHackMe-212C42?&style=for-the-badge&logo=tryhackme&logoColor=white" />
-</div>
-
----
-
-## Hands-On Learning – TryHackMe
-
-### 🟢 Pre Security Path  
-**Level:** Beginner  
-**Focus:** Core IT, networking, and security foundations.
-
-- Cyber security fundamentals and industry roles  
-- Networking basics (IP, DNS, ports, TCP/IP)  
-- Linux fundamentals (terminal navigation, permissions)  
-- Core security principles (CIA triad, malware types)  
-- Introductory Python concepts  
-
-**Skills gained:**  
-Linux confidence, networking awareness, cyber terminology, scripting foundations
-
----
-
-### 🔵 Cyber Security 101 Path  
-**Level:** Beginner to early SOC-ready  
-**Focus:** Defensive security, monitoring, and SOC workflows.
-
-- Linux and Windows fundamentals (including Active Directory concepts)
-- Bash and PowerShell command-line usage
-- Network traffic and protocol analysis
-- Wireshark packet inspection
-- Cryptography fundamentals
-- Introductory exploitation & OWASP Top 10 awareness
-- Defensive security concepts (log analysis, alert investigation)
-- SOC workflows and incident response basics
-- Introductory SIEM exposure (Splunk & Elastic)
-- Windows logging tools (Sysmon, Event Viewer)
-
-**Skills gained:**  
-Log analysis, alert triage awareness, attacker vs defender understanding, early SOC thinking
-
----
-
-### Tools Used in Labs
-- Linux terminal (browser-based VMs)
-- Wireshark
-- Splunk (introductory use)
-- Elastic (introductory use)
-- Nmap
-- Burp Suite (basic usage)
-- PowerShell
-- Bash
-
----
-
-## Enterprise & Financial Technology Exposure
-
-Alongside cyber security learning, I have gained exposure to **enterprise-scale software engineering concepts** commonly used in **financial and high-assurance environments**, including:
-
-- Understanding how large systems prioritise **security, reliability, and data integrity**
-- Awareness of **secure coding practices** and development lifecycles
-- Exposure to **engineering standards**, documentation, and controlled environments
-- Appreciation of **risk management**, change control, and operational resilience
-- Working within structured technical teams and learning professional engineering expectations
-
-This experience has strengthened my interest in cyber security within **regulated, large-scale organisations** where security is critical to business operations.
-
----
-
-## Projects
-
-### 🧪 Detection & Defensive Security (Learning Project)
-This project focuses on developing SOC-style thinking by analysing logs, identifying suspicious behaviour, and understanding how security events are investigated in practice.
-
-**Focus areas:**
-- Log review and analysis
-- Understanding alerts and suspicious activity
-- Structured investigation approaches
-
----
-
-### 🤖 SOC Automation Concepts (Learning Project)
-This project explores **SOC automation concepts** and how automation can support analysts by reducing repetitive tasks and improving consistency.
-
-**Focus areas:**
-- Understanding SOAR concepts
-- Alert handling workflows
-- Security process optimisation
-
----
-
-## Why a Degree Apprenticeship
-A degree apprenticeship allows me to **apply what I learn immediately**, develop professionally within an organisation, and build strong technical foundations while working towards a degree. I am particularly interested in environments where **security, engineering quality, and responsibility** are taken seriously.
-
----
-
-## Currently Developing
-- Strengthening SOC fundamentals (triage, investigation flow)
-- Improving network traffic analysis skills
-- Building confidence with scripting and automation
-- Preparing for degree-level technical study
-
----
-
-📫 **Connect with me:**  
-<a href="https://www.linkedin.com/in/inderjit-chahal-28a59b258">
-  <img src="https://img.shields.io/badge/-LinkedIn-0072b1?&style=for-the-badge&logo=linkedin&logoColor=white" />
-</a>
+## License
+MIT
